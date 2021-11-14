@@ -22936,7 +22936,7 @@ function comment (lcov, options) {
 			: `Coverage for this commit`,
 		table(tbody(tr(th(percentage(lcov).toFixed(2), "%")))),
 		"\n\n",
-		details(summary("Coverage Report"), tabulate(lcov, options)),
+		details({ open: true }, summary("Coverage Report"), tabulate(lcov, options)),
 	)
 }
 
