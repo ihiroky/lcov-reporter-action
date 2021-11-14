@@ -1,17 +1,20 @@
-name: Code Coverage Report
-description: Comments a pull request with the code coverage
-author: Romeo Van Snick
+name: LCOV Code Coverage Reporter
+description: Create check run with the lcov code coverage
+author: Hiroki Itoh <ihiroky@gmail.com>
 branding:
   icon: check-square
   color: green
 inputs:
-  github-token:
-    description: Github token
+  name:
+    description: Name of the check run
     required: true
-    default: ${{ github.token }}
+  github-token:
+    description: GitHub Access Token
+    required: true
   lcov-file:
     description: The location of the lcov.info file
     required: false
+    default: ./coverage/lcov.info
   lcov-base:
     description: The location of the lcov file for the base branch
     required: false

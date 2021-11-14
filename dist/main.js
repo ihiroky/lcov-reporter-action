@@ -22969,20 +22969,40 @@ function diff(lcov, before, options) {
 	)
 }
 
+function getCommitSHA() {
+  if (github_1.eventName === "workflow_run") {
+    core$1.info("Action was triggered by workflow_run: using SHA and RUN_ID from triggering workflow");
+    const event = github_1.payload;
+    if (!event.workflow_run) {
+      throw new Error('Event of type "workflow_run" is missing "workflow_run" field')
+    }
+    return event.workflow_run.head_commit.id
+  }
+
+  if (github_1.payload.pull_request) {
+    core$1.info(`Action was triggered by ${github_1.eventName}: using SHA from head of source branch`);
+    const pr = github_1.payload.pull_request;
+    return pr.head.sha
+  }
+
+  return github_1.sha
+}
+
 async function main$1() {
-	const token = core$1.getInput("github-token");
-	const lcovFile = core$1.getInput("lcov-file") || "./coverage/lcov.info";
+	const token = core$1.getInput("github-token", { required: true });
+	const name = core$1.getInput("name", { required: true });
+	const lcovFile = core$1.getInput("lcov-file");
 	const baseFile = core$1.getInput("lcov-base");
 
 	const raw = await fs.promises.readFile(lcovFile, "utf-8").catch(err => null);
 	if (!raw) {
-		console.log(`No coverage report found at '${lcovFile}', exiting...`);
+		console.log(`No coverage report found at "${lcovFile}", exiting...`);
 		return
 	}
 
 	const baseRaw = baseFile && await fs.promises.readFile(baseFile, "utf-8").catch(err => null);
 	if (baseFile && !baseRaw) {
-		console.log(`No coverage report found at '${baseFile}', ignoring...`);
+		console.log(`No coverage report found at "${baseFile}", ignoring...`);
 	}
 
 	const options = {
@@ -22999,25 +23019,38 @@ async function main$1() {
 		options.head = github_1.ref;
 	}
 
+	const github = new github_2(token);
+	const head_sha = getCommitSHA();
+	const checkCreatePromise = github.checks.create({
+		head_sha,
+		name,
+		status: "in_progress",
+		output: {
+			title: name,
+			summary: ""
+		},
+		...github_1.repo
+	});
+
 	const lcov = await parse$2(raw);
 	const baselcov = baseRaw && await parse$2(baseRaw);
 	const body = diff(lcov, baselcov, options);
 
-	if (github_1.eventName === "pull_request") {
-		await new github_2(token).issues.createComment({
-			repo: github_1.repo.repo,
-			owner: github_1.repo.owner,
-			issue_number: github_1.payload.pull_request.number,
-			body: diff(lcov, baselcov, options),
-		});
-	} else if (github_1.eventName === "push") {
-		await new github_2(token).repos.createCommitComment({
-			repo: github_1.repo.repo,
-			owner: github_1.repo.owner,
-			commit_sha: options.commit,
-			body: diff(lcov, baselcov, options),
-		});
-	}
+	const createResult = await checkCreatePromise;
+	const updateResult = await github.checks.update({
+		check_run_id: createResult.data.id,
+		conclusion: 'success',
+		status: "completed",
+		output: {
+			title: `${name} ${icon}`,
+			summary: body,
+		},
+		...github_1.repo
+	});
+
+	core$1.info(`Check run create response: ${updateResult.status}`);
+	core$1.info(`Check run URL: ${updateResult.data.url}`);
+	core$1.info(`Check run HTML: ${updateResult.data.html_url}`);
 }
 
 main$1().catch(function(err) {
