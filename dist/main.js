@@ -23042,7 +23042,7 @@ async function main$1() {
 		conclusion: 'success',
 		status: "completed",
 		output: {
-			title: `${name} ${icon}`,
+			title: `${name}`,
 			summary: body,
 		},
 		...github_1.repo

@@ -78,7 +78,7 @@ async function main() {
 		conclusion: 'success',
 		status: "completed",
 		output: {
-			title: `${name} ${icon}`,
+			title: `${name}`,
 			summary: body,
 		},
 		...context.repo
