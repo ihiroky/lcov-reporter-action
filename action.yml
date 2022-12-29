@@ -19,5 +19,5 @@ inputs:
     description: The location of the lcov file for the base branch
     required: false
 runs:
-  using: node12
+  using: node16
   main: dist/main.js
